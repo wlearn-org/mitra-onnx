@@ -1,29 +1,150 @@
-# mitra-onnx
+# @wlearn/mitra
 
-Convert [Mitra](https://huggingface.co/autogluon/mitra-classifier) safetensors to ONNX.
+Mitra Tab2D in-context learning model as a [wlearn](https://github.com/wlearn-org/wlearn)
+Estimator. Wraps the 72M-parameter tabular foundation model from Amazon/AutoGluon in the
+standard wlearn `fit()` / `predict()` / `save()` / `load()` API.
 
-Mitra is a 72M-parameter tabular foundation model (12-layer 2D Transformer) from
-Amazon/AutoGluon. It uses in-context learning: given a support set and query set, it
-predicts query labels without traditional training.
+Mitra uses in-context learning: instead of gradient-based training, `fit()` selects a
+support set from your data, and `predict()` passes that support set alongside your query
+data through the ONNX model in a single forward pass.
 
-This repo downloads the safetensors from HuggingFace, reimplements the model with
-ONNX-exportable ops, and exports to ONNX format. The ONNX models can run in ONNX Runtime
-(Python, C++, Node.js, browser via onnxruntime-web) without a PyTorch dependency.
+## Data storage warning
 
-## Variants
+**`fit()` stores a subset of your training data** (up to `maxSupport` rows, default 512)
+inside the model instance. This support set is:
+
+- Held in memory as Float32Array for the lifetime of the instance
+- Serialized into the `.wlrn` bundle when you call `save()`
+- Required for every `predict()` call (it is the model's "context")
+
+If your training data is sensitive, be aware that saved bundles contain real data points.
+The `maxSupport` parameter controls how many rows are stored. Call `dispose()` to release
+the support set from memory.
+
+## Install
+
+```bash
+npm install @wlearn/mitra onnxruntime-node   # Node.js
+npm install @wlearn/mitra onnxruntime-web    # Browser
+```
+
+You also need the ONNX model files (see "ONNX conversion" below).
+
+## Usage
+
+```js
+import { MitraClassifier } from '@wlearn/mitra'
+import * as ort from 'onnxruntime-node'
+import { readFileSync } from 'fs'
+
+// Load ONNX model (290 MB)
+const onnxBytes = readFileSync('mitra-classifier.onnx')
+const session = await ort.InferenceSession.create(onnxBytes.buffer)
+
+// Create estimator
+const model = await MitraClassifier.create(session, {
+  maxSupport: 512,  // max support set size (default)
+  seed: 42          // RNG seed for support set sampling
+}, { ort })
+
+// Fit: selects and stores a support set from training data
+model.fit(X_train, y_train)
+
+// Predict: runs ONNX inference with stored support set as context
+const predictions = await model.predict(X_test)
+const probabilities = await model.predictProba(X_test)
+const acc = await model.score(X_test, y_test)
+
+// Save/load (requires the same ONNX model to load)
+const bundle = model.save()  // Uint8Array (.wlrn format)
+const loaded = await MitraClassifier.load(bundle, session, { ort })
+
+model.dispose()
+```
+
+### Regressor
+
+```js
+import { MitraRegressor } from '@wlearn/mitra'
+
+const session = await ort.InferenceSession.create(regressorOnnxBytes.buffer)
+const model = await MitraRegressor.create(session, { maxSupport: 512 }, { ort })
+
+model.fit(X_train, y_train)
+const predictions = await model.predict(X_test)
+const r2 = await model.score(X_test, y_test)
+```
+
+### Registry integration
+
+```js
+import { registerLoaders } from '@wlearn/mitra'
+import { load } from '@wlearn/core'
+
+// Register loaders so core.load() can dispatch .wlrn bundles
+registerLoaders(classifierSession, regressorSession, { ort })
+const model = await load(bundleBytes)
+```
+
+## API
+
+### MitraClassifier
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `static create(onnxSource, params?, opts?)` | `Promise<MitraClassifier>` | Factory. onnxSource is an InferenceSession or Uint8Array of ONNX bytes |
+| `fit(X, y)` | `this` | Select support set from training data (sync) |
+| `predict(X)` | `Promise<Float64Array>` | Class label predictions |
+| `predictProba(X)` | `Promise<Float64Array>` | Class probabilities (rows * nClasses) |
+| `score(X, y)` | `Promise<number>` | Accuracy |
+| `save()` | `Uint8Array` | Serialize to .wlrn bundle |
+| `static load(bytes, onnxSource, opts?)` | `Promise<MitraClassifier>` | Deserialize |
+| `dispose()` | `void` | Release session and support set |
+| `getParams()` | `object` | `{ maxSupport, seed }` |
+| `setParams(p)` | `this` | Update params |
+| `capabilities` | `object` | `{ classifier: true, predictProba: true, ... }` |
+| `classes` | `Int32Array` | Sorted unique class labels |
+| `nrClass` | `number` | Number of classes |
+| `nrFeature` | `number` | Number of features |
+
+### MitraRegressor
+
+Same API minus `predictProba`, `classes`, `nrClass`. `score()` returns R2.
+
+### Parameters
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `maxSupport` | 512 | Maximum support set size. If training data exceeds this, a subset is sampled |
+| `seed` | 42 | RNG seed for deterministic support set sampling |
+
+## Bundle format
+
+The `.wlrn` bundle stores the support set, not the ONNX model (which is 290 MB). Loading
+requires the ONNX model to be provided separately.
+
+| Artifact | Format | Contents |
+|----------|--------|----------|
+| `meta` | JSON | `{ nFeatures, nSupport, classes, onnxSha256, seed }` |
+| `support_x` | raw float32 | Support set features, row-major |
+| `support_y` | raw int32/float32 | Support set labels (int32 for classifier, float32 for regressor) |
+
+TypeIds: `wlearn.mitra_onnx.classifier@1`, `wlearn.mitra_onnx.regressor@1`
+
+## ONNX model variants
 
 | Model | HuggingFace | Output |
 |-------|-------------|--------|
 | Classifier | [autogluon/mitra-classifier](https://huggingface.co/autogluon/mitra-classifier) | `(B, N_query, 10)` logits |
 | Regressor | [autogluon/mitra-regressor](https://huggingface.co/autogluon/mitra-regressor) | `(B, N_query)` values |
 
-## Setup
+## ONNX conversion
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Convert
+### Convert
 
 ```bash
 python convert.py              # both variants
@@ -33,7 +154,7 @@ python convert.py --variant regressor
 
 Produces `mitra-classifier.onnx` and/or `mitra-regressor.onnx`.
 
-## Verify
+### Verify
 
 Compare PyTorch and ONNX Runtime outputs:
 
@@ -42,7 +163,7 @@ python verify.py
 python verify.py --atol 1e-4
 ```
 
-## ONNX model inputs
+### ONNX model inputs
 
 All dimensions are dynamic (variable batch, support/query/feature counts).
 
@@ -56,6 +177,18 @@ All dimensions are dynamic (variable batch, support/query/feature counts).
 Note: `padding_features` and `padding_obs_query` are accepted by the PyTorch model for
 API compatibility but are unused in the CPU code path (they only matter for flash
 attention). The ONNX tracer correctly eliminates them from the graph.
+
+## Testing
+
+Requires ONNX models in the repo root (run `python convert.py` first).
+
+```bash
+npm install
+npm test
+```
+
+26 tests covering: create, fit, predict, predictProba, score, save/load round-trip,
+dispose, error handling, support set selection, determinism.
 
 ## What was changed for ONNX export
 
