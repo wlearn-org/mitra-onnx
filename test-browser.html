@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mitra ONNX Browser Test</title>
+</head>
+<body>
+  <h1>Mitra ONNX Browser Test</h1>
+  <pre id="log">Loading...</pre>
+  <script src="/ort.min.js"></script>
+  <script>
+    const log = document.getElementById('log')
+    function print(msg) {
+      log.textContent += '\n' + msg
+      console.log(msg)
+    }
+
+    async function run() {
+      log.textContent = ''
+
+      try {
+        // Load fixture with deterministic inputs and expected outputs
+        print('Loading fixture...')
+        const resp = await fetch('/fixture.json')
+        const fixture = await resp.json()
+
+        // Use WASM backend (CPU), disable threading for simplicity
+        ort.env.wasm.numThreads = 1
+
+        print('Creating ONNX Runtime session...')
+        const t0 = performance.now()
+        const session = await ort.InferenceSession.create('/mitra-classifier.onnx', {
+          executionProviders: ['wasm']
+        })
+        print(`Model loaded in ${(performance.now() - t0).toFixed(0)}ms`)
+
+        // Build typed arrays from fixture
+        const xSupport = new Float32Array(fixture.x_support)
+        const ySupport = new BigInt64Array(fixture.y_support.map(v => BigInt(v)))
+        const xQuery = new Float32Array(fixture.x_query)
+        const paddingObsSupport = new Uint8Array(fixture.padding_obs_support)
+
+        const feeds = {
+          x_support: new ort.Tensor('float32', xSupport, fixture.shapes.x_support),
+          y_support: new ort.Tensor('int64', ySupport, fixture.shapes.y_support),
+          x_query: new ort.Tensor('float32', xQuery, fixture.shapes.x_query),
+          padding_obs_support: new ort.Tensor('bool', paddingObsSupport, fixture.shapes.padding_obs_support),
+        }
+
+        print('Running inference...')
+        const t1 = performance.now()
+        const results = await session.run(feeds)
+        const inferMs = (performance.now() - t1).toFixed(0)
+        print(`Inference done in ${inferMs}ms`)
+
+        const output = results.output
+        const browserData = Array.from(output.data)
+        const expected = fixture.expected_output
+
+        print(`Output shape: [${output.dims.join(', ')}]`)
+        print(`Expected shape: [${fixture.expected_shape.join(', ')}]`)
+
+        // Shape check
+        const dimsOk = JSON.stringify(Array.from(output.dims)) === JSON.stringify(fixture.expected_shape)
+        print(`Shape check: ${dimsOk ? 'PASS' : 'FAIL'}`)
+
+        // Numerical comparison
+        let maxDiff = 0
+        let sumDiff = 0
+        for (let i = 0; i < expected.length; i++) {
+          const d = Math.abs(browserData[i] - expected[i])
+          if (d > maxDiff) maxDiff = d
+          sumDiff += d
+        }
+        const meanDiff = sumDiff / expected.length
+        const ATOL = 1e-4
+
+        print(`Max abs diff vs PyTorch:  ${maxDiff.toExponential(2)}`)
+        print(`Mean abs diff vs PyTorch: ${meanDiff.toExponential(2)}`)
+        print(`Match (atol=${ATOL}): ${maxDiff < ATOL ? 'PASS' : 'FAIL'}`)
+
+        // Print first few values side by side
+        print('')
+        print('First 5 values:')
+        print('  Browser:  ' + browserData.slice(0, 5).map(v => v.toFixed(6)).join(', '))
+        print('  PyTorch:  ' + expected.slice(0, 5).map(v => v.toFixed(6)).join(', '))
+
+        const allPass = dimsOk && maxDiff < ATOL
+        print(`\nResult: ${allPass ? 'PASS' : 'FAIL'}`)
+        document.title = allPass ? 'PASS' : 'FAIL'
+
+      } catch (e) {
+        print(`ERROR: ${e.message}`)
+        print(e.stack)
+        document.title = 'FAIL'
+      }
+    }
+
+    run()
+  </script>
+</body>
+</html>
