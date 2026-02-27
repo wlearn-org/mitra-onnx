@@ -18,11 +18,11 @@
     "access": "public"
   },
   "scripts": {
-    "test": "node test/test.js"
+    "test": "node --test test/test-unit.js test/test.js"
   },
   "dependencies": {
-    "@wlearn/core": "file:../wlearn/packages/core",
-    "@wlearn/types": "file:../wlearn/packages/types"
+    "@wlearn/core": "0.1.0",
+    "@wlearn/types": "0.1.0"
   },
   "peerDependencies": {
     "onnxruntime-node": ">=1.16.0",

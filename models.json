@@ -1,0 +1,15 @@
+{
+  "tag": "models-v1.0.0",
+  "files": {
+    "mitra-classifier.onnx": {
+      "sha256": "001ce9fa816a70c0f7c8b55d3436c090f3e24ff23dcc6fe8fe662fc2c5aba197",
+      "inputs": ["x_support", "y_support", "x_query", "padding_obs_support"],
+      "outputs": ["output"]
+    },
+    "mitra-regressor.onnx": {
+      "sha256": "d473ef0e7176ce120a73f9452403c8ae4bcdd0896e490f56b5d722350862de0e",
+      "inputs": ["x_support", "y_support", "x_query", "padding_obs_support"],
+      "outputs": ["output"]
+    }
+  }
+}
