@@ -2,14 +2,18 @@
   "name": "@wlearn/mitra",
   "version": "0.1.0",
   "description": "Mitra Tab2D in-context learning model as a wlearn Estimator (ONNX Runtime)",
-  "type": "module",
+  "type": "commonjs",
   "main": "src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    }
   },
   "files": [
     "src/",
     "LICENSE",
+    "NOTICE",
     "README.md",
     "CHANGELOG.md"
   ],

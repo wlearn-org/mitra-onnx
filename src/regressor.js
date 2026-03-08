@@ -1,15 +1,15 @@
-import {
+const {
   encodeBundle, decodeBundle, encodeJSON, decodeJSON,
   normalizeX, normalizeY,
   NotFittedError, DisposedError, ValidationError,
   r2Score
-} from '@wlearn/core'
-import { selectSupport, runInference, sha256Sync } from './shared.js'
+} = require('@wlearn/core')
+const { selectSupport, runInference, sha256Sync } = require('./shared.js')
 
 const TYPE_ID = 'wlearn.mitra_onnx.regressor@1'
 const LOAD_SENTINEL = Symbol('load')
 
-export class MitraRegressor {
+class MitraRegressor {
   #ort
   #session
   #ownSession
@@ -250,12 +250,14 @@ export class MitraRegressor {
 
 async function detectOrt() {
   try {
-    return await import('onnxruntime-node')
+    return require('onnxruntime-node')
   } catch {
     try {
-      return await import('onnxruntime-web')
+      return require('onnxruntime-web')
     } catch {
       throw new Error('No ONNX Runtime found. Install onnxruntime-node or onnxruntime-web.')
     }
   }
 }
+
+module.exports = { MitraRegressor }

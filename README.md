@@ -33,9 +33,9 @@ You also need the ONNX model files (see "ONNX conversion" below).
 ## Usage
 
 ```js
-import { MitraClassifier } from '@wlearn/mitra'
-import * as ort from 'onnxruntime-node'
-import { readFileSync } from 'fs'
+const { MitraClassifier } = require('@wlearn/mitra')
+const ort = require('onnxruntime-node')
+const { readFileSync } = require('fs')
 
 // Load ONNX model (290 MB)
 const onnxBytes = readFileSync('mitra-classifier.onnx')
@@ -65,7 +65,7 @@ model.dispose()
 ### Regressor
 
 ```js
-import { MitraRegressor } from '@wlearn/mitra'
+const { MitraRegressor } = require('@wlearn/mitra')
 
 const session = await ort.InferenceSession.create(regressorOnnxBytes.buffer)
 const model = await MitraRegressor.create(session, { maxSupport: 512 }, { ort })
@@ -78,8 +78,8 @@ const r2 = await model.score(X_test, y_test)
 ### Registry integration
 
 ```js
-import { registerLoaders } from '@wlearn/mitra'
-import { load } from '@wlearn/core'
+const { registerLoaders } = require('@wlearn/mitra')
+const { load } = require('@wlearn/core')
 
 // Register loaders so core.load() can dispatch .wlrn bundles
 registerLoaders(classifierSession, regressorSession, { ort })

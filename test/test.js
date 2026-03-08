@@ -1,11 +1,8 @@
-import { test } from 'node:test'
-import assert from 'node:assert/strict'
-import { existsSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+const { test } = require('node:test')
+const assert = require('node:assert/strict')
+const { existsSync } = require('fs')
+const { join } = require('path')
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 const ROOT = join(__dirname, '..')
 
 const hasModels =
@@ -18,12 +15,13 @@ const SKIP = !hasModels && 'ONNX model files not found (run convert.py or script
 let ort, MitraClassifier, MitraRegressor, decodeBundle, validateBundle
 let classifierSession, regressorSession
 
-if (hasModels) {
-  ort = await import('onnxruntime-node')
-  const src = await import('../src/index.js')
+async function setup() {
+  if (!hasModels) return
+  ort = require('onnxruntime-node')
+  const src = require('../src/index.js')
   MitraClassifier = src.MitraClassifier
   MitraRegressor = src.MitraRegressor
-  const core = await import('@wlearn/core')
+  const core = require('@wlearn/core')
   decodeBundle = core.decodeBundle
   validateBundle = core.validateBundle
 
@@ -70,6 +68,11 @@ function makeRegressionData(rng, nSamples, nFeatures) {
   }
   return { X, y }
 }
+
+// Run setup before tests
+test('setup', async () => {
+  await setup()
+})
 
 // ============================================================
 // MitraClassifier

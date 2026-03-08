@@ -1,7 +1,7 @@
-import { test } from 'node:test'
-import assert from 'node:assert/strict'
-import { selectSupport, softmax } from '../src/shared.js'
-import { MitraClassifier } from '../src/classifier.js'
+const { test } = require('node:test')
+const assert = require('node:assert/strict')
+const { selectSupport, softmax } = require('../src/shared.js')
+const { MitraClassifier } = require('../src/classifier.js')
 
 // ============================================================
 // selectSupport() -- stratified (classification)

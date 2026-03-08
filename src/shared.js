@@ -1,4 +1,4 @@
-import { makeLCG, shuffle } from '@wlearn/core'
+const { makeLCG, shuffle } = require('@wlearn/core')
 
 /**
  * Select a support set from the training data.
@@ -7,7 +7,7 @@ import { makeLCG, shuffle } from '@wlearn/core'
  *
  * Returns { xSupport: Float32Array, ySupport: Float32Array|Int32Array, indices: Int32Array }
  */
-export function selectSupport(X, y, nFeatures, maxSupport, seed, stratified) {
+function selectSupport(X, y, nFeatures, maxSupport, seed, stratified) {
   const rows = y.length
   const rng = makeLCG(seed)
 
@@ -88,7 +88,7 @@ export function selectSupport(X, y, nFeatures, maxSupport, seed, stratified) {
  * @param {boolean} isClassifier
  * @returns {Promise<Float32Array>} raw output from ONNX model
  */
-export async function runInference(ort, session, xSupport, ySupport, xQuery, nFeatures, nSupport, nQuery, isClassifier) {
+async function runInference(ort, session, xSupport, ySupport, xQuery, nFeatures, nSupport, nQuery, isClassifier) {
   const B = 1
 
   // Build tensors -- Mitra expects batch dim
@@ -126,7 +126,7 @@ export async function runInference(ort, session, xSupport, ySupport, xQuery, nFe
  * logits: Float32Array of shape (nQuery, nClasses), row-major
  * Returns Float64Array of same shape with probabilities.
  */
-export function softmax(logits, nQuery, nClasses) {
+function softmax(logits, nQuery, nClasses) {
   const proba = new Float64Array(nQuery * nClasses)
   for (let i = 0; i < nQuery; i++) {
     const offset = i * nClasses
@@ -149,4 +149,6 @@ export function softmax(logits, nQuery, nClasses) {
 /**
  * Compute SHA-256 of a Uint8Array using the pure-JS implementation from @wlearn/core.
  */
-export { sha256Sync } from '@wlearn/core'
+const { sha256Sync } = require('@wlearn/core')
+
+module.exports = { selectSupport, runInference, softmax, sha256Sync }
