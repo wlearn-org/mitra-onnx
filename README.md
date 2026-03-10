@@ -32,6 +32,16 @@ You also need the ONNX model files (see "ONNX conversion" below).
 
 ## Usage
 
+### Unified class (recommended)
+
+```js
+const { MitraModel } = require('@wlearn/mitra')
+```
+
+`MitraModel` accepts `task: 'classification'` or `task: 'regression'` and auto-detects from labels if omitted. Split classes (`MitraClassifier`, `MitraRegressor`) are also exported for backward compatibility.
+
+### Direct usage
+
 ```js
 const { MitraClassifier } = require('@wlearn/mitra')
 const ort = require('onnxruntime-node')
