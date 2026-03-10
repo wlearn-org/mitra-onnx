@@ -1,6 +1,6 @@
 # @wlearn/mitra
 
-Mitra Tab2D in-context learning model as a [wlearn](https://github.com/wlearn-org/wlearn)
+Mitra Tab2D in-context learning model as a [wlearn](https://wlearn.org) ([GitHub](https://github.com/wlearn-org), [all packages](https://github.com/wlearn-org/wlearn#repository-structure))
 Estimator. Wraps the 72M-parameter tabular foundation model from Amazon/AutoGluon in the
 standard wlearn `fit()` / `predict()` / `save()` / `load()` API.
 
