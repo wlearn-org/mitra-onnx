@@ -1,6 +1,8 @@
 const { MitraClassifier } = require('./classifier.js')
 const { MitraRegressor } = require('./regressor.js')
-const { register } = require('@wlearn/core')
+const { register, createModelClass } = require('@wlearn/core')
+
+const MitraModel = createModelClass(MitraClassifier, MitraRegressor, { name: 'MitraModel' })
 
 /**
  * Register bundle loaders for both Mitra model types.
@@ -25,4 +27,4 @@ function registerLoaders(classifierOnnx, regressorOnnx, opts = {}) {
   }
 }
 
-module.exports = { MitraClassifier, MitraRegressor, registerLoaders }
+module.exports = { MitraModel, MitraClassifier, MitraRegressor, registerLoaders }
