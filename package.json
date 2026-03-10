@@ -53,5 +53,9 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "onnxruntime-node": "^1.24.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wlearn-org/mitra-onnx.git"
   }
 }
