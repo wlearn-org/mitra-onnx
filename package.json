@@ -1,6 +1,6 @@
 {
   "name": "@wlearn/mitra",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Mitra Tab2D in-context learning model as a wlearn Estimator (ONNX Runtime)",
   "type": "commonjs",
   "main": "src/index.js",
@@ -25,8 +25,7 @@
     "test": "node --test test/test-unit.js test/test.js"
   },
   "dependencies": {
-    "@wlearn/core": "0.1.0",
-    "@wlearn/types": "0.1.0"
+    "@wlearn/core": "0.2.0"
   },
   "peerDependencies": {
     "onnxruntime-node": ">=1.16.0",
@@ -57,5 +56,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/wlearn-org/mitra-onnx.git"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/wlearn-org/mitra-onnx/issues"
+  },
+  "homepage": "https://wlearn.org"
 }

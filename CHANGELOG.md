@@ -2,6 +2,9 @@
 
 ## 0.2.0
 
+- Depend on the CommonJS `@wlearn/core` release
+- Add package homepage and GitHub issue metadata
+
 - Add `MitraModel` unified class via `createModelClass`
 - Unified class accepts `task` parameter and auto-detect from labels
 - Original split classes (`MitraClassifier`, `MitraRegressor`) still exported for backward compatibility
